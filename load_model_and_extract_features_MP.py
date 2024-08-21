@@ -1,3 +1,5 @@
+import os.path
+
 from model.extract_features_MP import *
 from model import models
 from PIL import Image
@@ -32,34 +34,19 @@ def main():
     df = pd.read_csv(args.input_path, keep_default_na=False,
                      usecols=['ORF', 'Name', 'Strain ID', 'Center_X', 'Center_Y', 'Image_Path'])
     gene_map = {}
-    path_to_cell_array = {}
+    # path_to_cell_array = {}
     for orf, name, strainid, x, y, img_path in df.itertuples(index=False):
-        # if not name:
-        #     gene = orf
-        # else:
-        #     gene = name
-        # if gene not in gene_map:
-        #     gene_map[gene] = []
-
         if strainid not in gene_map:
             gene_map[strainid] = []
 
+        if not os.path.exists(img_path):
+            print("File not found: %s" % img_path)
+            raise FileNotFoundError
+
         center_x = int(x)
         center_y = int(y)
-        loc_left = center_x - args.crop_size/2
-        loc_upper = center_y - args.crop_size/2
-        loc_right = center_x + args.crop_size/2
-        loc_lower = center_y + args.crop_size/2
-
-        try:
-            full_image = Image.open(img_path)
-        except FileNotFoundError:
-            continue
-        cell_crop = full_image.crop((loc_left, loc_upper, loc_right, loc_lower))
-
         cell_path = f'{img_path}_X_{center_x}_Y_{center_y}'
         gene_map[strainid].append(cell_path)
-        path_to_cell_array[cell_path] = np.array(cell_crop)
 
     if args.marker != 'Hta2':
         seek_ch = 0
@@ -68,7 +55,7 @@ def main():
 
     for protein_name, cells in gene_map.items():
 
-        protein_features, protein_images = get_features_from_protein(protein_name, gene_map, model, path_to_cell_array,
+        protein_features, protein_images = get_features_from_protein(protein_name, gene_map, model,
                                                                      seek_ch, average=False)
         if args.marker:
             output_path = f'{args.output_dir}/{args.marker}_{protein_name}_scFP.npy'

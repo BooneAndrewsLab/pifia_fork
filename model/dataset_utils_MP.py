@@ -36,7 +36,6 @@ def decode_img_py_func(file_paths_tuple, file_path_mask, seek_ch, do_mask=True):
         im = Image.open(img_path)
         if seek_ch_num:
             im.seek(1)
-            print("seek_ch_num", seek_ch_num)
         im = im.crop((loc_left, loc_upper, loc_right, loc_lower))
         im = np.array(im).reshape(64,64,1)
         im = (im-np.min(im))/(np.max(im)-np.min(im))
@@ -53,7 +52,6 @@ def process_path_py_func(file_paths_tuple, file_path_mask, label, seek_ch, num_c
     # decode_img(file_path)
     img = tf.py_function(func=decode_img_py_func, inp=[file_paths_tuple, file_path_mask, seek_ch, do_mask],
                          Tout=tf.float32)
-    # print("img", type(img), img.shape)
     if onehot:
         label = tf.one_hot(label, num_classes)
     return img, label # 4093
@@ -174,7 +172,7 @@ def get_files_and_labels_from_dict(protein_to_files_dict, subset, \
 
 
 
-def get_dataset_from_lists(filenames_channels_list, filenames_mask, labels, path_to_cell_array, \
+def get_dataset_from_lists(filenames_channels_list, filenames_mask, labels, \
                            seek_ch, num_classes, do_mask, batch_size, \
                            standardize=False, onehot=True, train=True):
     list_of_ds = []
@@ -197,9 +195,9 @@ def get_dataset_from_lists(filenames_channels_list, filenames_mask, labels, path
     dataset = tf.data.Dataset.zip(tuple_of_ds)
     num_ch = len(filenames_channels_list)
 
-    path_to_cell_array_list = []
-    for c_path, c_array in path_to_cell_array.items():
-        path_to_cell_array_list.append((c_path, c_array))
+    # path_to_cell_array_list = []
+    # for c_path, c_array in path_to_cell_array.items():
+    #     path_to_cell_array_list.append((c_path, c_array))
 
     if num_ch==1:
         dataset = dataset.map(lambda f1,f_mask,l: process_path_py_func([f1],f_mask,l, seek_ch,
